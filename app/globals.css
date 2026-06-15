@@ -1,26 +1,238 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
+
+/* App is dark-only: dark tokens live in :root. Brand = biru tua. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --radius: 0.65rem;
+
+  --background: #09090b;
+  --foreground: #fafafa;
+
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
+
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #27272a;
+  --input: #3f3f46;
+  --ring: #2563eb;
+
+  /* Brand + surface extras used across the app */
+  --primary-light: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --primary-deep: #1e3a8a;
+  --surface: #111111;
+  --sidebar-hover: #18181b;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-deep: var(--primary-deep);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* App-specific aliases (kept for existing classes) */
+  --color-card-border: var(--border);
+  --color-surface: var(--surface);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+
+  --color-stroke: var(--border);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-neue-montreal), "Neue Montreal", Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-neue-montreal), monospace;
+
+  /* Motion language — premium ease curves reused everywhere */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);   /* exponential ease-out: smooth, confident entrances */
+  --ease-smooth: cubic-bezier(0.32, 0.72, 0, 1);  /* tight ease for quick UI feedback */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1); /* subtle overshoot for playful taps */
+
+  /* Layered elevation — soft, realistic depth instead of a single hard shadow */
+  --shadow-float:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 4px 12px -2px rgba(0, 0, 0, 0.45);
+  --shadow-elevated:
+    0 5px 11px rgba(0, 0, 0, 0.34),
+    0 20px 20px -6px rgba(0, 0, 0, 0.28),
+    0 46px 28px -12px rgba(0, 0, 0, 0.15);
+  --shadow-glow: 0 0 0 1px var(--primary), 0 6px 20px -4px color-mix(in srgb, var(--primary) 55%, transparent);
+
+  /* Animation utilities (Tailwind v4 --animate-* namespace → animate-*) */
+  --animate-fade-in: fade-in 160ms var(--ease-smooth) both;
+  --animate-fade-up: fade-up 0.45s var(--ease-spring) both;
+  --animate-scale-in: scale-in 0.18s var(--ease-smooth) both;
+  --animate-slide-up: slide-up 0.32s var(--ease-spring) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-neue-montreal), "Neue Montreal", Arial, Helvetica, sans-serif;
+  }
+  html,
+  body {
+    overscroll-behavior-x: none;
+  }
+
+  /* Pointer affordances */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Thin scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f46 transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes shimmer {
+  from { background-position: -150% 0; }
+  to   { background-position: 250% 0; }
+}
+
+/* tw-animate-css provides animate-in; this is our hand-tuned default entrance. */
+.animate-fade-in {
+  animation: fade-in 160ms var(--ease-smooth);
+}
+
+/* Staggered children — set --stagger via inline style or step utilities below. */
+.stagger > * {
+  animation: fade-up 0.45s var(--ease-spring) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+/* Shimmer skeleton: a moving highlight reads as "loading" far better than a flat pulse. */
+.skeleton-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.06) 40%,
+    rgba(255, 255, 255, 0.06) 60%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Reusable lift affordance for interactive cards/tiles. */
+.lift {
+  transition:
+    transform 180ms var(--ease-spring),
+    box-shadow 180ms var(--ease-spring),
+    border-color 180ms var(--ease-spring);
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-float);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

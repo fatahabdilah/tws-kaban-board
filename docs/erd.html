@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kanban — ERD (Workspace model)</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <style>
+      :root {
+        --bg: #09090b;
+        --surface: #18181b;
+        --border: #27272a;
+        --text: #fafafa;
+        --muted: #a1a1aa;
+        --primary: #2563eb;
+        --primary-light: #3b82f6;
+        --success: #22c55e;
+        --warning: #f59e0b;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, Arial, sans-serif;
+        line-height: 1.5;
+      }
+      .wrap { max-width: 1100px; margin: 0 auto; padding: 48px 24px 96px; }
+      header h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
+      header p { color: var(--muted); margin: 0; }
+      .badge {
+        display: inline-block; background: color-mix(in srgb, var(--primary) 18%, transparent);
+        color: var(--primary-light); font-size: 12px; padding: 2px 10px; border-radius: 999px;
+        margin-left: 8px; vertical-align: middle;
+      }
+      section { margin-top: 40px; }
+      h2 { font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+      .diagram {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+        padding: 16px; overflow-x: auto;
+      }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+      .card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+      }
+      .card h3 {
+        margin: 0; padding: 12px 16px; font-size: 15px; background: #111113;
+        border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+      }
+      .card h3 .tag { font-size: 11px; color: var(--muted); font-weight: 400; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      td { padding: 7px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+      tr:last-child td { border-bottom: none; }
+      td.col { color: var(--text); white-space: nowrap; }
+      td.type { color: var(--muted); font-family: ui-monospace, monospace; font-size: 12px; }
+      .pk { color: var(--warning); font-weight: 600; }
+      .fk { color: var(--primary-light); }
+      .note { color: var(--muted); font-size: 12px; }
+      ul.rel { line-height: 1.9; }
+      ul.rel code, .inline {
+        background: #111113; border: 1px solid var(--border); border-radius: 6px;
+        padding: 1px 6px; font-family: ui-monospace, monospace; font-size: 12px;
+      }
+      .pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; margin-right:4px; }
+      .pill.admin { background: color-mix(in srgb, var(--primary) 18%, transparent); color: var(--primary-light); }
+      .pill.member { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+      .pill.viewer { background: #3f3f4640; color: #d4d4d8; }
+      .pill.super { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Kanban — Entity Relationship Diagram <span class="badge">Workspace model</span></h1>
+        <p>Hierarki: <strong>Workspace → Boards → Lists → Cards</strong>. Keanggotaan, peran, divisi &amp; jabatan ada di level <strong>Workspace</strong>.</p>
+      </header>
+
+      <section>
+        <h2>Diagram</h2>
+        <div class="diagram">
+          <pre class="mermaid">
+erDiagram
+    auth_users        ||--|| profiles          : "1:1 (trigger)"
+    profiles          ||--o{ workspaces        : "owner_id"
+    profiles          ||--o{ workspace_members : "user_id"
+    workspaces        ||--o{ workspace_members : "workspace_id"
+    workspaces        ||--o{ boards            : "workspace_id"
+    boards            ||--o{ lists             : "board_id"
+    lists             ||--o{ cards             : "list_id"
+    workspaces        ||--o{ cards             : "workspace_id (denorm)"
+    profiles          ||--o{ cards             : "assignee / creator"
+
+    profiles {
+        uuid          id PK "= auth.users.id"
+        text          email
+        text          full_name
+        platform_role platform_role "user | super_admin"
+    }
+    workspaces {
+        uuid        id PK
+        text        name
+        text        description
+        uuid        owner_id FK "-> profiles.id"
+    }
+    workspace_members {
+        uuid       workspace_id PK,FK "-> workspaces.id"
+        uuid       user_id      PK,FK "-> profiles.id"
+        board_role role "admin | member | viewer"
+        text       division "mis. Creative"
+        text       job_title "mis. Editor"
+    }
+    boards {
+        uuid id PK
+        uuid workspace_id FK "-> workspaces.id"
+        text title
+        uuid created_by FK "-> profiles.id"
+    }
+    lists {
+        uuid    id PK
+        uuid    board_id FK "-> boards.id"
+        text    title
+        numeric position
+    }
+    cards {
+        uuid    id PK
+        uuid    list_id FK "-> lists.id"
+        uuid    board_id FK "-> boards.id (denorm)"
+        uuid    workspace_id FK "-> workspaces.id (denorm)"
+        text    title
+        numeric position
+        timestamptz due_date
+        uuid    assignee_id FK "-> profiles.id"
+    }
+          </pre>
+        </div>
+        <p class="note">Tip: kalau diagram tidak muncul (offline), lihat tabel detail di bawah — isinya sama.</p>
+      </section>
+
+      <section>
+        <h2>Detail tabel</h2>
+        <div class="grid">
+
+          <div class="card">
+            <h3>profiles <span class="tag">1:1 auth.users</span></h3>
+            <table>
+              <tr><td class="col pk">id</td><td class="type">uuid · PK → auth.users.id</td></tr>
+              <tr><td class="col">email</td><td class="type">text</td></tr>
+              <tr><td class="col">full_name</td><td class="type">text</td></tr>
+              <tr><td class="col">avatar_url</td><td class="type">text</td></tr>
+              <tr><td class="col">platform_role</td><td class="type">enum: user | super_admin</td></tr>
+              <tr><td class="col">created_at / updated_at</td><td class="type">timestamptz</td></tr>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3>workspaces <span class="tag">milik 1 user</span></h3>
+            <table>
+              <tr><td class="col pk">id</td><td class="type">uuid · PK</td></tr>
+              <tr><td class="col">name</td><td class="type">text</td></tr>
+              <tr><td class="col">description</td><td class="type">text</td></tr>
+              <tr><td class="col fk">owner_id</td><td class="type">uuid → profiles.id</td></tr>
+              <tr><td class="col">created_at / updated_at</td><td class="type">timestamptz</td></tr>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3>workspace_members <span class="tag">junction (M:N)</span></h3>
+            <table>
+              <tr><td class="col pk fk">workspace_id</td><td class="type">uuid · PK → workspaces.id</td></tr>
+              <tr><td class="col pk fk">user_id</td><td class="type">uuid · PK → profiles.id</td></tr>
+              <tr><td class="col">role</td><td class="type">enum: admin | member | viewer</td></tr>
+              <tr><td class="col">division</td><td class="type">text · mis. Creative</td></tr>
+              <tr><td class="col">job_title</td><td class="type">text · mis. Editor</td></tr>
+              <tr><td class="col fk">added_by</td><td class="type">uuid → profiles.id</td></tr>
+              <tr><td class="col">created_at</td><td class="type">timestamptz</td></tr>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3>boards</h3>
+            <table>
+              <tr><td class="col pk">id</td><td class="type">uuid · PK</td></tr>
+              <tr><td class="col fk">workspace_id</td><td class="type">uuid → workspaces.id</td></tr>
+              <tr><td class="col">title</td><td class="type">text</td></tr>
+              <tr><td class="col">description</td><td class="type">text</td></tr>
+              <tr><td class="col fk">created_by</td><td class="type">uuid → profiles.id</td></tr>
+              <tr><td class="col">created_at / updated_at</td><td class="type">timestamptz</td></tr>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3>lists <span class="tag">kolom</span></h3>
+            <table>
+              <tr><td class="col pk">id</td><td class="type">uuid · PK</td></tr>
+              <tr><td class="col fk">board_id</td><td class="type">uuid → boards.id</td></tr>
+              <tr><td class="col">title</td><td class="type">text</td></tr>
+              <tr><td class="col">position</td><td class="type">numeric · urutan</td></tr>
+              <tr><td class="col">created_at / updated_at</td><td class="type">timestamptz</td></tr>
+            </table>
+          </div>
+
+          <div class="card">
+            <h3>cards <span class="tag">kartu</span></h3>
+            <table>
+              <tr><td class="col pk">id</td><td class="type">uuid · PK</td></tr>
+              <tr><td class="col fk">list_id</td><td class="type">uuid → lists.id</td></tr>
+              <tr><td class="col fk">board_id</td><td class="type">uuid → boards.id (denorm)</td></tr>
+              <tr><td class="col fk">workspace_id</td><td class="type">uuid → workspaces.id (denorm, utk RLS)</td></tr>
+              <tr><td class="col">title</td><td class="type">text</td></tr>
+              <tr><td class="col">description</td><td class="type">text</td></tr>
+              <tr><td class="col">position</td><td class="type">numeric</td></tr>
+              <tr><td class="col">due_date</td><td class="type">timestamptz</td></tr>
+              <tr><td class="col fk">assignee_id</td><td class="type">uuid → profiles.id</td></tr>
+              <tr><td class="col fk">created_by</td><td class="type">uuid → profiles.id</td></tr>
+              <tr><td class="col">created_at / updated_at</td><td class="type">timestamptz</td></tr>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      <section>
+        <h2>Relasi</h2>
+        <ul class="rel">
+          <li><span class="inline">auth.users → profiles</span> — 1:1, dibuat otomatis saat signup (trigger).</li>
+          <li><span class="inline">profiles → workspaces</span> — 1:N (owner). Tiap user bisa membuat banyak workspace.</li>
+          <li><span class="inline">profiles ↔ workspaces</span> — M:N lewat <span class="inline">workspace_members</span> (membawa role, division, job_title). <strong>Di sinilah anggota ditambahkan.</strong></li>
+          <li><span class="inline">workspaces → boards → lists → cards</span> — rantai 1:N.</li>
+          <li><span class="inline">cards.workspace_id / board_id</span> — denormalisasi (disinkron trigger) supaya cek hak akses (RLS) tanpa banyak join.</li>
+          <li><span class="inline">cards.assignee_id / created_by → profiles</span> — penanggung jawab &amp; pembuat kartu.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Model peran &amp; akses</h2>
+        <p><strong>Platform</strong> (global per akun):
+          <span class="pill super">super_admin</span> dashboard khusus — lihat &amp; kelola semua workspace/board, atur peran platform.
+          <span class="pill viewer">user</span> user biasa — punya/ikut workspace.
+        </p>
+        <p><strong>Workspace</strong> (per anggota, berlaku ke semua board di dalamnya):
+          <span class="pill admin">admin</span> kelola anggota + semua isi
+          <span class="pill member">member</span> edit board/list/kartu
+          <span class="pill viewer">viewer</span> hanya lihat
+        </p>
+        <p class="note">division &amp; job_title hanya label informatif (mis. Creative / Editor) — tidak mengubah hak akses. Hanya admin workspace yang bisa mengisinya. Akses board diturunkan dari keanggotaan workspace.</p>
+      </section>
+    </div>
+
+    <script>
+      mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' });
+    </script>
+  </body>
+</html>

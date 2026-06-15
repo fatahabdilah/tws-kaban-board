@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kanban Board
 
-## Getting Started
+Aplikasi papan Kanban ala Trello — multi-user dengan peran, dibangun dengan **Next.js 16**, **React 19**, **Tailwind v4**, dan **Supabase** (Auth + Postgres + Row Level Security). Drag-and-drop memakai **@dnd-kit**. Tema gelap dengan brand biru tua.
 
-First, run the development server:
+## Fitur
+
+- **Auth**: daftar / masuk dengan email + password (Supabase Auth).
+- **Boards → Lists → Cards** dengan drag-and-drop (pindah & urutkan kartu antar kolom, urutkan kolom).
+- **Kartu**: judul, deskripsi, tenggat, penanggung jawab (assignee).
+- **Peran per board**: `admin` (kelola anggota + semua isi), `member` (edit list & kartu), `viewer` (read-only).
+- **Super admin platform**: melihat & mengelola semua board, mengatur peran platform pengguna lain via `/admin`.
+
+## Setup
+
+### 1. Buat project Supabase
+Buat project di [supabase.com](https://supabase.com). Catat dari **Project Settings → API**:
+- Project URL
+- `anon` public key
+- `service_role` key (rahasia)
+
+### 2. Isi environment variables
+Salin `.env.example` menjadi `.env.local` dan isi nilai aslinya:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Terapkan schema database
+Buka **SQL Editor** di dashboard Supabase, tempel seluruh isi
+[`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), dan jalankan.
+Ini membuat semua tabel, fungsi helper, trigger, dan kebijakan RLS.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> Catatan: nonaktifkan "Confirm email" di **Authentication → Providers → Email**
+> jika ingin login langsung tanpa verifikasi email (cocok untuk dev).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Bootstrap super admin
+Daftar akun lewat aplikasi terlebih dulu (`/signup`), lalu jalankan sekali di SQL Editor:
 
-## Learn More
+```sql
+update public.profiles set platform_role = 'super_admin'
+where email = 'fatah.abdilah@orovagroup.id';
+```
 
-To learn more about Next.js, take a look at the following resources:
+Setelah itu, super admin bisa mengangkat pengguna lain lewat halaman `/admin`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 5. Jalankan
+```bash
+npm install
+npm run dev
+```
+Buka [http://localhost:3000](http://localhost:3000).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Arsitektur (catatan Next.js 16)
 
-## Deploy on Vercel
+Versi Next.js ini memiliki beberapa perubahan penting:
+- `cookies()` bersifat **async** → di-`await` (lihat [`lib/supabase/server.ts`](lib/supabase/server.ts)).
+- `params` / `searchParams` adalah **Promise** → di-`await` di page.
+- **`proxy.ts`** menggantikan `middleware.ts` untuk refresh sesi & proteksi rute.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Keamanan ditegakkan di lapisan database via RLS; setiap Server Action juga memverifikasi `auth.getUser()`. Fungsi `SECURITY DEFINER` (`is_board_member`, `board_role`, dll.) mencegah rekursi RLS pada tabel keanggotaan.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Regenerasi tipe Supabase (opsional)
+Untuk mengganti tipe tulis-tangan dengan tipe hasil generate:
+```bash
+npx supabase gen types typescript --project-id <project-id> > lib/supabase/types.ts
+```
