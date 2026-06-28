@@ -22,15 +22,17 @@ export async function createWorkspace(formData: FormData) {
   if (!name) throw new Error('Nama workspace wajib diisi.');
 
   const { supabase, userId } = await authed();
+
+  // Tulis lewat SECURITY DEFINER RPC (tidak bergantung auth.uid()).
+  // owner_id diambil dari getUser() yang sudah terverifikasi di server.
   const { data, error } = await supabase
-    .from('workspaces')
-    .insert({ name, description, owner_id: userId })
+    .rpc('create_workspace', { p_owner_id: userId, p_name: name, p_description: description })
     .select('id')
     .single();
   if (error) throw new Error(error.message);
 
   revalidatePath('/workspaces');
-  redirect(`/workspaces/${data!.id}`);
+  redirect(`/workspaces/${(data as { id: string }).id}`);
 }
 
 export async function renameWorkspace(workspaceId: string, name: string) {
